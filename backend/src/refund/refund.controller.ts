@@ -5,7 +5,7 @@ import { CreateDisputeDto } from './dto/create-dispute.dto';
 import { UploadEvidenceDto } from './dto/upload-evidence.dto';
 import { UpdateDisputeDto } from './dto/update-dispute.dto';
 import { RefundQueryDto } from './dto/refund-query.dto';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('refunds')
 @UseGuards(JwtAuthGuard)
