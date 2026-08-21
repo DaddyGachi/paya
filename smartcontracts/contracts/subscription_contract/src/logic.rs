@@ -129,6 +129,22 @@ pub fn initialize(env: &Env, admin: Address, fee_percentage: u64) {
     storage::set_emergency_pause(env, false);
 }
 
+pub fn set_integration_contracts(
+    env: &Env,
+    merchant_vault: Address,
+    payment_registry: Address,
+    caller: Address,
+) -> Result<(), Error> {
+    let admin = storage::get_admin(env).ok_or(Error::NotInitialized)?;
+    if admin != caller {
+        return Err(Error::NotAuthorized);
+    }
+    
+    storage::set_merchant_vault_address(env, &merchant_vault);
+    storage::set_payment_registry_address(env, &payment_registry);
+    Ok(())
+}
+
 pub fn create_plan(
     env: &Env,
     merchant: Address,
@@ -242,6 +258,16 @@ pub fn process_billing(
     let fee_percentage = storage::get_fee_percentage(env).unwrap_or(0);
     let platform_fee = (plan.amount * fee_percentage as i128) / 10000;
     let merchant_amount = plan.amount - platform_fee;
+    
+    // Get integration contract addresses
+    let _merchant_vault = storage::get_merchant_vault_address(env)
+        .ok_or(Error::PaymentFailed)?;
+    let _payment_registry = storage::get_payment_registry_address(env)
+        .ok_or(Error::PaymentFailed)?;
+    
+    // TODO: Implement cross-contract calls using soroban-sdk v27 API
+    // For now, we'll skip the actual integration calls
+    // This would involve calling merchant_vault.deposit and payment_registry.create_payment
     
     subscription.current_cycle += 1;
     subscription.last_billing_at = Some(now);

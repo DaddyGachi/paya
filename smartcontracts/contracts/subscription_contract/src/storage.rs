@@ -96,3 +96,27 @@ pub fn has_subscription(env: &Env, customer: &Address, plan_id: &String) -> bool
     }
     false
 }
+
+pub fn get_merchant_vault_address(env: &Env) -> Option<Address> {
+    env.storage()
+        .instance()
+        .get::<DataKey, Address>(&DataKey::MerchantVaultAddress)
+}
+
+pub fn set_merchant_vault_address(env: &Env, address: &Address) {
+    env.storage()
+        .instance()
+        .set::<DataKey, Address>(&DataKey::MerchantVaultAddress, address);
+}
+
+pub fn get_payment_registry_address(env: &Env) -> Option<Address> {
+    env.storage()
+        .instance()
+        .get::<DataKey, Address>(&DataKey::PaymentRegistryAddress)
+}
+
+pub fn set_payment_registry_address(env: &Env, address: &Address) {
+    env.storage()
+        .instance()
+        .set::<DataKey, Address>(&DataKey::PaymentRegistryAddress, address);
+}

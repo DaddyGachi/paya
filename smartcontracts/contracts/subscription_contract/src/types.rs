@@ -10,6 +10,8 @@ pub enum DataKey {
     PlanCounter,
     SubscriptionCounter,
     EmergencyPause,
+    MerchantVaultAddress,
+    PaymentRegistryAddress,
 }
 
 #[contracttype]
@@ -77,4 +79,5 @@ pub enum Error {
     InvalidAmount = 12,
     CannotModifyActiveSubscription = 13,
     BillingNotDue = 14,
+    PaymentFailed = 15,
 }

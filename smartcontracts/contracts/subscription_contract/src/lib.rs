@@ -15,6 +15,15 @@ impl SubscriptionContract {
         logic::initialize(&env, admin, fee_percentage);
     }
 
+    pub fn set_integration_contracts(
+        env: Env,
+        merchant_vault: Address,
+        payment_registry: Address,
+        caller: Address,
+    ) -> Result<(), types::Error> {
+        logic::set_integration_contracts(&env, merchant_vault, payment_registry, caller)
+    }
+
     pub fn create_plan(
         env: Env,
         merchant: Address,
