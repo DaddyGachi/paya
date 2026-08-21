@@ -1,11 +1,16 @@
 [workspace]
 resolver = "2"
 members = [
-  "contracts/*",
+  "contracts/subscription_contract",
+  "contracts/merchant_vault_contract",
+  "contracts/payment_registry_contract",
+  "contracts/escrow_contract",
+  "contracts/payment_split_contract",
+  "contracts/hello_world",
 ]
 
 [workspace.dependencies]
-soroban-sdk = "20.3.2"
+soroban-sdk = "27.0.6"
 
 [profile.release]
 opt-level = "z"
