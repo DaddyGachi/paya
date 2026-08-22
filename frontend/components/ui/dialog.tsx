@@ -22,12 +22,20 @@ Dialog.displayName = "Dialog"
 
 const DialogTrigger = React.forwardRef<
   HTMLButtonElement,
-  React.ButtonHTMLAttributes<HTMLButtonElement>
->(({ className, children, ...props }, ref) => (
-  <button ref={ref} className={className || ''} {...props}>
-    {children}
-  </button>
-))
+  React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }
+>(({ className, children, asChild = false, ...props }, ref) => {
+  if (asChild && React.isValidElement(children)) {
+    return React.cloneElement(children as React.ReactElement<any>, {
+      ref,
+      ...props
+    })
+  }
+  return (
+    <button ref={ref} className={className || ''} {...props}>
+      {children}
+    </button>
+  )
+})
 DialogTrigger.displayName = "DialogTrigger"
 
 const DialogContent = React.forwardRef<
@@ -70,4 +78,14 @@ const DialogDescription = React.forwardRef<
 ))
 DialogDescription.displayName = "DialogDescription"
 
-export { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription }
+const DialogFooter = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, children, ...props }, ref) => (
+  <div ref={ref} className={`flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 mt-4 ${className || ''}`} {...props}>
+    {children}
+  </div>
+))
+DialogFooter.displayName = "DialogFooter"
+
+export { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter }
