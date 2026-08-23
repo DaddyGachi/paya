@@ -1,4 +1,34 @@
-use soroban_sdk::{contracttype, Address, String, Vec, Env, Symbol};
+use soroban_sdk::{contracttype, Address, String, Vec, Symbol, Map, contracterror};
+
+#[contracterror]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[repr(u32)]
+pub enum ContractError {
+    SplitNotFound = 1,
+    InvalidPercentage = 2,
+    InvalidAmount = 3,
+    SplitAlreadyExecuted = 4,
+    SplitCancelled = 5,
+    InsufficientBalance = 6,
+    InvalidRecipient = 7,
+    MilestoneNotTriggered = 8,
+    MaxRetriesExceeded = 9,
+    Unauthorized = 10,
+    ContractPaused = 11,
+    ReentrancyDetected = 12,
+    CircularReference = 13,
+    MaxDepthExceeded = 14,
+    ConditionNotMet = 15,
+    ConditionExpired = 16,
+    TimeLockNotExpired = 17,
+    RefundNotAllowed = 18,
+    RefundAlreadyProcessed = 19,
+    InvalidRefundAmount = 20,
+    Overflow = 21,
+    Underflow = 22,
+    InvalidAddress = 23,
+    AdminOnly = 24,
+}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[contracttype]
@@ -9,6 +39,8 @@ pub enum SplitStatus {
     PartiallyCompleted,
     Failed,
     Cancelled,
+    Refunded,
+    PartiallyRefunded,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -17,6 +49,10 @@ pub enum SplitType {
     Percentage,
     FixedAmount,
     Milestone,
+    Hybrid,
+    Conditional,
+    TimeLocked,
+    Recursive,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -28,6 +64,26 @@ pub enum MilestoneStatus {
     Skipped,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+#[contracttype]
+pub enum ConditionalStatus {
+    Pending,
+    ConditionMet,
+    ConditionFailed,
+    Expired,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+#[contracttype]
+pub enum RefundStatus {
+    None,
+    Requested,
+    Approved,
+    Rejected,
+    Processing,
+    Completed,
+}
+
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Recipient {
@@ -37,6 +93,8 @@ pub struct Recipient {
     pub split_type: SplitType,
     pub distributed_amount: i128,
     pub distribution_status: SplitStatus,
+    pub is_recursive: bool, // True if recipient is another split contract
+    pub recursive_split_id: String, // ID of recursive split if applicable
 }
 
 #[contracttype]
@@ -53,6 +111,34 @@ pub struct Milestone {
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ConditionalSplit {
+    pub condition_id: String,
+    pub condition_type: String, // e.g., "oracle", "multisig", "external_contract"
+    pub condition_data: Map<String, String>, // Flexible condition parameters
+    pub status: ConditionalStatus,
+    pub expires_at: u64,
+    pub verified_at: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TimeLockedSplit {
+    pub lock_until: u64,
+    pub release_automatically: bool,
+    pub released_at: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RecursiveSplitConfig {
+    pub parent_split_id: String,
+    pub current_depth: u32,
+    pub max_depth: u32,
+    pub visited_splits: Vec<String>, // For circular reference detection
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PaymentSplit {
     pub split_id: String,
     pub payment_id: String,
@@ -63,11 +149,17 @@ pub struct PaymentSplit {
     pub status: SplitStatus,
     pub recipients: Vec<Recipient>,
     pub milestones: Vec<Milestone>,
+    pub conditional_split: ConditionalSplit,
+    pub time_locked_split: TimeLockedSplit,
+    pub recursive_config: RecursiveSplitConfig,
     pub created_at: u64,
     pub executed_at: u64,
     pub completed_at: u64,
     pub retry_count: u32,
     pub max_retries: u32,
+    pub refund_status: RefundStatus,
+    pub refunded_amount: i128,
+    pub refund_fee: i128,
 }
 
 #[contracttype]
@@ -82,21 +174,35 @@ pub struct SplitDistribution {
     pub attempted_at: u64,
     pub completed_at: u64,
     pub error_message: String,
+    pub is_recursive: bool,
+    pub parent_distribution_id: String,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[contracttype]
-pub enum Error {
-    SplitNotFound,
-    InvalidPercentage,
-    InvalidAmount,
-    SplitAlreadyExecuted,
-    SplitCancelled,
-    InsufficientBalance,
-    InvalidRecipient,
-    MilestoneNotTriggered,
-    MaxRetriesExceeded,
-    Unauthorized,
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RefundRequest {
+    pub refund_id: String,
+    pub split_id: String,
+    pub requester: Address,
+    pub refund_amount: i128,
+    pub reason: String,
+    pub status: RefundStatus,
+    pub requested_at: u64,
+    pub approved_at: u64,
+    pub completed_at: u64,
+    pub fee_amount: i128,
+    pub admin_address: Address,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SecurityConfig {
+    pub admin_address: Address,
+    pub paused: bool,
+    pub reentrancy_guard: bool,
+    pub max_recursive_depth: u32,
+    pub refund_fee_percentage: i128,
+    pub emergency_withdraw_enabled: bool,
 }
 
 #[contracttype]
